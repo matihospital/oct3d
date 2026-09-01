@@ -1,0 +1,214 @@
+@import "tailwindcss";
+
+:root {
+  --ink: #f5f0eb;
+  --panel: #1a1f2e;
+  --panel-2: #232a3d;
+  --line: rgba(255, 140, 66, 0.18);
+  --muted: #9aa3b5;
+  --text: #f5f0eb;
+  --accent: #ff8c42;
+  --accent-soft: rgba(255, 140, 66, 0.14);
+  --teal: #3dd6c6;
+  --teal-soft: rgba(61, 214, 198, 0.12);
+  --filament: #7c5cff;
+  --filament-soft: rgba(124, 92, 255, 0.14);
+  --electric: #ffd166;
+  --electric-soft: rgba(255, 209, 102, 0.14);
+  --ok: #5dffa6;
+  --ok-soft: rgba(93, 255, 166, 0.12);
+  --void: #0d1117;
+  --shadow: 0 0 0 1px rgba(255, 140, 66, 0.08), 0 18px 50px rgba(0, 0, 0, 0.45);
+  --shadow-sm: 0 0 0 1px rgba(61, 214, 198, 0.08), 0 8px 24px rgba(0, 0, 0, 0.35);
+}
+
+@theme inline {
+  --color-ink: var(--ink);
+  --color-panel: var(--panel);
+  --color-panel-2: var(--panel-2);
+  --color-line: var(--line);
+  --color-muted: var(--muted);
+  --color-text: var(--text);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-teal: var(--teal);
+  --color-teal-soft: var(--teal-soft);
+  --color-filament: var(--filament);
+  --color-filament-soft: var(--filament-soft);
+  --color-electric: var(--electric);
+  --color-electric-soft: var(--electric-soft);
+  --color-ok: var(--ok);
+  --color-ok-soft: var(--ok-soft);
+  --color-void: var(--void);
+  --font-display: var(--font-display);
+  --font-body: var(--font-body);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  color: var(--text);
+  font-family: var(--font-body), system-ui, sans-serif;
+  background:
+    radial-gradient(900px 480px at 8% -5%, rgba(255, 140, 66, 0.18), transparent 55%),
+    radial-gradient(800px 420px at 95% 5%, rgba(124, 92, 255, 0.16), transparent 50%),
+    radial-gradient(600px 360px at 50% 110%, rgba(61, 214, 198, 0.1), transparent 45%),
+    linear-gradient(180deg, #0d1117 0%, #121820 45%, #0d1117 100%);
+  background-attachment: fixed;
+}
+
+body::before {
+  content: "";
+  pointer-events: none;
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
+  background-size: 32px 32px;
+  mask-image: radial-gradient(circle at center, black 30%, transparent 85%);
+  opacity: 0.5;
+  z-index: 0;
+}
+
+.font-display {
+  font-family: var(--font-display), system-ui, sans-serif;
+  letter-spacing: 0.02em;
+}
+
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.rise-in {
+  animation: rise-in 0.4s ease-out;
+}
+
+.panel {
+  position: relative;
+  background: linear-gradient(180deg, rgba(35, 42, 61, 0.95), rgba(26, 31, 46, 0.98));
+  border: 1px solid var(--line);
+  border-radius: 1rem;
+  box-shadow: var(--shadow-sm);
+  backdrop-filter: blur(12px);
+}
+
+.panel::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 140, 66, 0.07),
+    transparent 40%,
+    transparent 60%,
+    rgba(61, 214, 198, 0.05)
+  );
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  border: 1px solid transparent;
+  cursor: pointer;
+  font-weight: 700;
+  border-radius: 0.65rem;
+  transition:
+    transform 0.15s ease,
+    background 0.15s ease,
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+.btn:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.field {
+  width: 100%;
+  border: 1px solid var(--line);
+  background: rgba(13, 17, 23, 0.75);
+  color: var(--text);
+  border-radius: 0.65rem;
+  padding: 0.7rem 0.9rem;
+  font-size: 0.95rem;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.field:focus {
+  border-color: rgba(255, 140, 66, 0.65);
+  box-shadow: 0 0 0 3px rgba(255, 140, 66, 0.15);
+}
+
+.stat-value {
+  font-variant-numeric: tabular-nums;
+}
+
+.cost-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border-radius: 999px;
+  padding: 0.25rem 0.65rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.price-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  text-align: center;
+  padding: 1.75rem 1.25rem;
+  border-radius: 1rem;
+  border: 1px solid var(--line);
+  background: linear-gradient(180deg, rgba(35, 42, 61, 0.95), rgba(26, 31, 46, 0.98));
+  box-shadow: var(--shadow-sm);
+}
+
+.price-card-retail {
+  border-color: rgba(93, 255, 166, 0.25);
+  background:
+    linear-gradient(180deg, rgba(93, 255, 166, 0.08), rgba(26, 31, 46, 0.98)),
+    linear-gradient(180deg, rgba(35, 42, 61, 0.95), rgba(26, 31, 46, 0.98));
+}
+
+.price-card-wholesale {
+  border-color: rgba(61, 214, 198, 0.25);
+  background:
+    linear-gradient(180deg, rgba(61, 214, 198, 0.08), rgba(26, 31, 46, 0.98)),
+    linear-gradient(180deg, rgba(35, 42, 61, 0.95), rgba(26, 31, 46, 0.98));
+}
