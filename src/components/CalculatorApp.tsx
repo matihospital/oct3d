@@ -18,15 +18,19 @@ function PriceCard({
   label: string;
   subtitle: string;
   price: string;
-  variant: "retail" | "wholesale";
+  variant: "retail" | "wholesale" | "bulk";
 }) {
-  const isRetail = variant === "retail";
+  const colorClass =
+    variant === "retail"
+      ? "text-ok"
+      : variant === "wholesale"
+        ? "text-teal"
+        : "text-accent";
+
   return (
-    <div
-      className={`price-card ${isRetail ? "price-card-retail" : "price-card-wholesale"} rise-in`}
-    >
+    <div className={`price-card price-card-${variant} rise-in`}>
       <p className="text-xs font-bold uppercase tracking-widest text-muted">{label}</p>
-      <p className={`stat-value font-display text-4xl font-bold md:text-5xl ${isRetail ? "text-ok" : "text-teal"}`}>
+      <p className={`stat-value font-display text-3xl font-bold md:text-4xl ${colorClass}`}>
         {price}
       </p>
       <p className="text-sm text-muted">{subtitle}</p>
@@ -163,7 +167,7 @@ export function CalculatorApp() {
             ) : null}
           </section>
 
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid gap-4 md:grid-cols-3">
             <PriceCard
               label="Precio público"
               subtitle="Venta al cliente final"
@@ -172,9 +176,15 @@ export function CalculatorApp() {
             />
             <PriceCard
               label="Precio mayorista"
-              subtitle="Venta por volumen o revendedores"
+              subtitle="Revendedores y pedidos chicos"
               price={formatMoney(costs.wholesalePrice)}
               variant="wholesale"
+            />
+            <PriceCard
+              label="Mayorista por volumen"
+              subtitle={`${DEFAULT_PRICING.bulkQuantity} o más unidades`}
+              price={formatMoney(costs.bulkPrice)}
+              variant="bulk"
             />
           </div>
         </div>
