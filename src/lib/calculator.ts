@@ -43,15 +43,21 @@ export function calculateCosts(
     tier.wholesaleMultiplier,
     pricing.minWholesalePrice,
   );
-  let bulkPrice = channelPrice(
-    totalCost,
-    tier.bulkMultiplier,
-    pricing.minBulkPrice,
-  );
 
-  // Mayorista siempre ≤ público; volumen ≤ mayorista
+  // Mayorista siempre ≤ público
   wholesalePrice = Math.min(wholesalePrice, retailPrice);
-  bulkPrice = Math.min(bulkPrice, wholesalePrice);
+
+  const bulkEligible = retailPrice < pricing.bulkMaxRetailPrice;
+  let bulkPrice: number | null = null;
+
+  if (bulkEligible) {
+    bulkPrice = channelPrice(
+      totalCost,
+      tier.bulkMultiplier,
+      pricing.minBulkPrice,
+    );
+    bulkPrice = Math.min(bulkPrice, wholesalePrice);
+  }
 
   return {
     filamentCost,
@@ -60,6 +66,7 @@ export function calculateCosts(
     retailPrice,
     wholesalePrice,
     bulkPrice,
+    bulkEligible,
     weightGrams,
     printTimeSeconds,
     printTimeHours,

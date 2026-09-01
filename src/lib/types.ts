@@ -18,6 +18,8 @@ export type PricingParams = {
   minBulkPrice: number;
   /** Cantidad mínima para precio por volumen */
   bulkQuantity: number;
+  /** Solo ofrecer volumen si el precio público queda por debajo de este tope */
+  bulkMaxRetailPrice: number;
   /** Tramos: a mayor costo interno, menor multiplicador */
   tiers: PricingTier[];
 };
@@ -56,7 +58,8 @@ export type CostBreakdown = {
   totalCost: number;
   retailPrice: number;
   wholesalePrice: number;
-  bulkPrice: number;
+  bulkPrice: number | null;
+  bulkEligible: boolean;
   weightGrams: number;
   printTimeSeconds: number;
   printTimeHours: number;

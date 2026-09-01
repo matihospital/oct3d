@@ -167,7 +167,9 @@ export function CalculatorApp() {
             ) : null}
           </section>
 
-          <div className="grid gap-4 md:grid-cols-3">
+          <div
+            className={`grid gap-4 ${costs.bulkEligible ? "md:grid-cols-3" : "md:grid-cols-2"}`}
+          >
             <PriceCard
               label="Precio público"
               subtitle="Venta al cliente final"
@@ -180,12 +182,14 @@ export function CalculatorApp() {
               price={formatMoney(costs.wholesalePrice)}
               variant="wholesale"
             />
-            <PriceCard
-              label="Mayorista por volumen"
-              subtitle={`${DEFAULT_PRICING.bulkQuantity} o más unidades`}
-              price={formatMoney(costs.bulkPrice)}
-              variant="bulk"
-            />
+            {costs.bulkEligible && costs.bulkPrice !== null ? (
+              <PriceCard
+                label="Mayorista por volumen"
+                subtitle={`${DEFAULT_PRICING.bulkQuantity} o más unidades`}
+                price={formatMoney(costs.bulkPrice)}
+                variant="bulk"
+              />
+            ) : null}
           </div>
         </div>
       ) : null}
