@@ -5,8 +5,8 @@ export const DEFAULT_PRICING: PricingParams = {
   printerWatts: 220,
   plaPricePerKg: 18000,
   minRetailPrice: 1500,
-  minWholesalePrice: 1000,
-  minBulkPrice: 800,
+  minWholesalePrice: 800,
+  minBulkPrice: 600,
   bulkQuantity: 50,
   tiers: [
     { maxCost: 800, retailMultiplier: 4, wholesaleMultiplier: 2.5, bulkMultiplier: 2 },
