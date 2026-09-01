@@ -213,9 +213,30 @@ body::before {
     linear-gradient(180deg, rgba(35, 42, 61, 0.95), rgba(26, 31, 46, 0.98));
 }
 
+.warning-banner {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+  border-radius: 0.75rem;
+  border: 1px solid rgba(255, 209, 102, 0.35);
+  background: rgba(255, 209, 102, 0.1);
+  padding: 0.85rem 1rem;
+  font-size: 0.875rem;
+  color: var(--electric);
+}
+
+.warning-banner strong {
+  color: #ffe08a;
+}
+
 .price-card-bulk {
   border-color: rgba(255, 140, 66, 0.25);
   background:
     linear-gradient(180deg, rgba(255, 140, 66, 0.08), rgba(26, 31, 46, 0.98)),
     linear-gradient(180deg, rgba(35, 42, 61, 0.95), rgba(26, 31, 46, 0.98));
+}
+
+.price-card-active {
+  outline: 2px solid rgba(255, 255, 255, 0.35);
+  outline-offset: 2px;
 }

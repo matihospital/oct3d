@@ -1,7 +1,11 @@
 "use client";
 
-import { calculateCosts } from "@/lib/calculator";
-import { DEFAULT_PRICING } from "@/lib/constants";
+import {
+  calculateCosts,
+  isLongPrint,
+  unitPriceForQuantity,
+} from "@/lib/calculator";
+import { DEFAULT_PRICING, LONG_PRINT_HOURS } from "@/lib/constants";
 import { formatDuration, formatGrams, formatMoney } from "@/lib/format";
 import type { CostBreakdown, MakerWorldModel } from "@/lib/types";
 import { useCallback, useMemo, useState } from "react";
@@ -14,11 +18,13 @@ function PriceCard({
   subtitle,
   price,
   variant,
+  active,
 }: {
   label: string;
   subtitle: string;
   price: string;
   variant: "retail" | "wholesale" | "bulk";
+  active?: boolean;
 }) {
   const colorClass =
     variant === "retail"
@@ -28,14 +34,35 @@ function PriceCard({
         : "text-accent";
 
   return (
-    <div className={`price-card price-card-${variant} rise-in`}>
+    <div
+      className={`price-card price-card-${variant} rise-in ${active ? "price-card-active" : ""}`}
+    >
       <p className="text-xs font-bold uppercase tracking-widest text-muted">{label}</p>
       <p className={`stat-value font-display text-3xl font-bold md:text-4xl ${colorClass}`}>
         {price}
       </p>
       <p className="text-sm text-muted">{subtitle}</p>
+      {active ? (
+        <p className="text-xs font-bold uppercase tracking-wider text-ink">Aplica a este pedido</p>
+      ) : null}
     </div>
   );
+}
+
+function activePriceTier(
+  costs: CostBreakdown,
+  quantity: number,
+): "retail" | "wholesale" | "bulk" {
+  const qty = Math.max(1, Math.floor(quantity));
+  if (
+    costs.bulkEligible &&
+    costs.bulkPrice !== null &&
+    qty >= DEFAULT_PRICING.bulkQuantity
+  ) {
+    return "bulk";
+  }
+  if (qty > 1) return "wholesale";
+  return "retail";
 }
 
 export function CalculatorApp() {
@@ -44,6 +71,7 @@ export function CalculatorApp() {
   const [activeProfileId, setActiveProfileId] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [quantity, setQuantity] = useState(1);
 
   const activeProfile = useMemo(() => {
     if (!model || activeProfileId === null) return null;
@@ -58,9 +86,23 @@ export function CalculatorApp() {
     return calculateCosts(weightGrams, printTimeSeconds, DEFAULT_PRICING);
   }, [weightGrams, printTimeSeconds]);
 
+  const qty = Math.max(1, Math.floor(quantity) || 1);
+
+  const showBulkPrice =
+    costs?.bulkEligible &&
+    costs.bulkPrice !== null &&
+    qty >= DEFAULT_PRICING.bulkQuantity;
+
+  const tier = costs ? activePriceTier(costs, qty) : "retail";
+
+  const orderTotal = costs
+    ? unitPriceForQuantity(costs, qty, DEFAULT_PRICING.bulkQuantity) * qty
+    : 0;
+
   const analyze = useCallback(async () => {
     setError(null);
     setLoading(true);
+    setQuantity(1);
 
     try {
       const res = await fetch(`/api/makerworld?url=${encodeURIComponent(url.trim())}`);
@@ -131,6 +173,24 @@ export function CalculatorApp() {
 
       {model && costs ? (
         <div className="space-y-5">
+          {isLongPrint(costs.printTimeHours, LONG_PRINT_HOURS) ? (
+            <div className="warning-banner rise-in" role="alert">
+              <span aria-hidden>⚠</span>
+              <p>
+                <strong>Impresión larga:</strong> esta pieza tarda más de {LONG_PRINT_HOURS}{" "}
+                horas por unidad ({formatDuration(costs.printTimeSeconds)}). Confirmá plazo de
+                entrega con el taller antes de cotizar.
+                {qty > 1 ? (
+                  <>
+                    {" "}
+                    Con {qty} unidades, estimá ~{formatDuration(costs.printTimeSeconds * qty)} de
+                    impresión total.
+                  </>
+                ) : null}
+              </p>
+            </div>
+          ) : null}
+
           <section className="panel rise-in space-y-4 p-5 md:p-6">
             <div className="flex flex-col items-center gap-4 text-center sm:flex-row sm:text-left">
               {model.coverUrl ? (
@@ -144,7 +204,8 @@ export function CalculatorApp() {
               <div className="min-w-0 space-y-1">
                 <h2 className="font-display text-xl font-bold text-ink">{model.title}</h2>
                 <p className="text-sm text-muted">
-                  {formatGrams(costs.weightGrams)} · {formatDuration(costs.printTimeSeconds)}
+                  {formatGrams(costs.weightGrams)} · {formatDuration(costs.printTimeSeconds)} por
+                  unidad
                 </p>
               </div>
             </div>
@@ -165,32 +226,65 @@ export function CalculatorApp() {
                 </select>
               </label>
             ) : null}
+
+            <label className="block space-y-1.5">
+              <span className="text-sm font-semibold text-ink">Cantidad de unidades</span>
+              <span className="block text-xs text-muted">
+                Con {DEFAULT_PRICING.bulkQuantity}+ unidades de productos baratos se activa el
+                precio por volumen
+              </span>
+              <input
+                type="number"
+                className="field"
+                min={1}
+                step={1}
+                value={qty}
+                onChange={(e) => setQuantity(Math.max(1, Number(e.target.value) || 1))}
+              />
+            </label>
           </section>
 
           <div
-            className={`grid gap-4 ${costs.bulkEligible ? "md:grid-cols-3" : "md:grid-cols-2"}`}
+            className={`grid gap-4 ${showBulkPrice ? "md:grid-cols-3" : "md:grid-cols-2"}`}
           >
             <PriceCard
               label="Precio público"
-              subtitle="Venta al cliente final"
+              subtitle="1 unidad · cliente final"
               price={formatMoney(costs.retailPrice)}
               variant="retail"
+              active={tier === "retail"}
             />
             <PriceCard
               label="Precio mayorista"
-              subtitle="Revendedores y pedidos chicos"
+              subtitle="2 o más unidades"
               price={formatMoney(costs.wholesalePrice)}
               variant="wholesale"
+              active={tier === "wholesale"}
             />
-            {costs.bulkEligible && costs.bulkPrice !== null ? (
+            {showBulkPrice ? (
               <PriceCard
                 label="Mayorista por volumen"
-                subtitle={`${DEFAULT_PRICING.bulkQuantity} o más unidades`}
-                price={formatMoney(costs.bulkPrice)}
+                subtitle={`${DEFAULT_PRICING.bulkQuantity}+ unidades`}
+                price={formatMoney(costs.bulkPrice!)}
                 variant="bulk"
+                active={tier === "bulk"}
               />
             ) : null}
           </div>
+
+          <section className="panel rise-in p-5 text-center md:p-6">
+            <p className="text-sm text-muted">
+              Total sugerido para {qty} {qty === 1 ? "unidad" : "unidades"}
+            </p>
+            <p className="stat-value font-display text-3xl font-bold text-ink">
+              {formatMoney(orderTotal)}
+            </p>
+            {isLongPrint(costs.printTimeHours * qty, LONG_PRINT_HOURS) ? (
+              <p className="mt-2 text-xs text-muted">
+                Tiempo de impresión estimado: {formatDuration(printTimeSeconds * qty)}
+              </p>
+            ) : null}
+          </section>
         </div>
       ) : null}
     </main>

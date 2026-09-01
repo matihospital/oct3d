@@ -72,3 +72,21 @@ export function calculateCosts(
     printTimeHours,
   };
 }
+
+/** Precio unitario sugerido según cantidad pedida */
+export function unitPriceForQuantity(
+  costs: CostBreakdown,
+  quantity: number,
+  bulkQuantity: number,
+): number {
+  const qty = Math.max(1, Math.floor(quantity));
+  if (costs.bulkEligible && costs.bulkPrice !== null && qty >= bulkQuantity) {
+    return costs.bulkPrice;
+  }
+  if (qty > 1) return costs.wholesalePrice;
+  return costs.retailPrice;
+}
+
+export function isLongPrint(printTimeHours: number, thresholdHours = 12): boolean {
+  return printTimeHours > thresholdHours;
+}

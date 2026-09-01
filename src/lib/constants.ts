@@ -18,3 +18,6 @@ export const DEFAULT_PRICING: PricingParams = {
 };
 
 export const BAMBU_API = "https://api.bambulab.com/v1/design-service/design";
+
+/** A partir de este tiempo por unidad se muestra alerta al vendedor */
+export const LONG_PRINT_HOURS = 12;
