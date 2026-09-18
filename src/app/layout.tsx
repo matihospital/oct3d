@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Space_Grotesk, DM_Sans } from "next/font/google";
+import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 
 const display = Space_Grotesk({
@@ -25,7 +26,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es" className={`${display.variable} ${body.variable} h-full`}>
-      <body className="min-h-full antialiased">{children}</body>
+      <body className="min-h-full antialiased">
+        {children}
+        <Analytics />
+      </body>
     </html>
   );
 }
