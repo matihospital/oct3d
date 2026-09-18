@@ -10,10 +10,10 @@ export const DEFAULT_PRICING: PricingParams = {
   bulkQuantity: 50,
   bulkMaxRetailPrice: 5000,
   tiers: [
-    { maxCost: 800, retailMultiplier: 4, wholesaleMultiplier: 2.5, bulkMultiplier: 2 },
-    { maxCost: 2500, retailMultiplier: 3.5, wholesaleMultiplier: 2.2, bulkMultiplier: 1.75 },
-    { maxCost: 6000, retailMultiplier: 2.8, wholesaleMultiplier: 1.9, bulkMultiplier: 1.5 },
-    { maxCost: Infinity, retailMultiplier: 2.2, wholesaleMultiplier: 1.6, bulkMultiplier: 1.25 },
+    { maxCost: 800, retailMultiplier: 4, wholesaleMultiplier: 3, bulkMultiplier: 2 },
+    { maxCost: 2500, retailMultiplier: 3.5, wholesaleMultiplier: 2.625, bulkMultiplier: 1.75 },
+    { maxCost: 6000, retailMultiplier: 2.8, wholesaleMultiplier: 2.1, bulkMultiplier: 1.5 },
+    { maxCost: Infinity, retailMultiplier: 2.2, wholesaleMultiplier: 2, bulkMultiplier: 1.25 },
   ],
 };
 
