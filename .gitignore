@@ -1,6 +1,6 @@
 # dependencies
-/node_modules
-/.pnp
+node_modules
+.pnp
 .pnp.*
 .yarn/*
 !.yarn/patches
@@ -12,8 +12,10 @@
 /coverage
 
 # next.js
-/.next/
-/out/
+.next/
+out/
+apps/web/.next/
+apps/web/out/
 
 # production
 /build
@@ -38,6 +40,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+apps/web/next-env.d.ts
 
-.vercel
-.env*
+# prisma
+packages/db/node_modules/.prisma

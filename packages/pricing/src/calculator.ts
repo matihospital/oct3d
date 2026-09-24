@@ -1,0 +1,110 @@
+import type { CostBreakdown, PricingParams, PricingTier } from "./types";
+
+function getTier(totalCost: number, tiers: PricingTier[]): PricingTier {
+  return tiers.find((t) => totalCost <= t.maxCost) ?? tiers[tiers.length - 1];
+}
+
+/** Redondeo a valores cotizables según magnitud del precio */
+export function roundSalePrice(price: number): number {
+  if (price <= 0) return 0;
+  if (price < 3000) return Math.ceil(price / 100) * 100;
+  if (price < 15000) return Math.ceil(price / 500) * 500;
+  return Math.ceil(price / 1000) * 1000;
+}
+
+function channelPrice(
+  totalCost: number,
+  multiplier: number,
+  floor: number,
+): number {
+  return roundSalePrice(Math.max(totalCost * multiplier, floor));
+}
+
+export function calculateCosts(
+  weightGrams: number,
+  printTimeSeconds: number,
+  pricing: PricingParams,
+): CostBreakdown {
+  const printTimeHours = printTimeSeconds / 3600;
+  const filamentCost = (weightGrams / 1000) * pricing.plaPricePerKg;
+  const electricCost =
+    printTimeHours * (pricing.printerWatts / 1000) * pricing.kwhPrice;
+  const totalCost = filamentCost + electricCost;
+
+  const tier = getTier(totalCost, pricing.tiers);
+
+  let retailPrice = channelPrice(
+    totalCost,
+    tier.retailMultiplier,
+    pricing.minRetailPrice,
+  );
+  let wholesalePrice = channelPrice(
+    totalCost,
+    tier.wholesaleMultiplier,
+    pricing.minWholesalePrice,
+  );
+
+  // Mayorista siempre ≤ público
+  wholesalePrice = Math.min(wholesalePrice, retailPrice);
+
+  const bulkEligible = retailPrice < pricing.bulkMaxRetailPrice;
+  let bulkPrice: number | null = null;
+
+  if (bulkEligible) {
+    bulkPrice = channelPrice(
+      totalCost,
+      tier.bulkMultiplier,
+      pricing.minBulkPrice,
+    );
+    bulkPrice = Math.min(bulkPrice, wholesalePrice);
+  }
+
+  return {
+    filamentCost,
+    electricCost,
+    totalCost,
+    retailPrice,
+    wholesalePrice,
+    bulkPrice,
+    bulkEligible,
+    weightGrams,
+    printTimeSeconds,
+    printTimeHours,
+  };
+}
+
+/** Precio unitario sugerido según cantidad pedida */
+export function unitPriceForQuantity(
+  costs: CostBreakdown,
+  quantity: number,
+  bulkQuantity: number,
+): number {
+  const qty = Math.max(1, Math.floor(quantity));
+  if (costs.bulkEligible && costs.bulkPrice !== null && qty >= bulkQuantity) {
+    return costs.bulkPrice;
+  }
+  if (qty > 1) return costs.wholesalePrice;
+  return costs.retailPrice;
+}
+
+export function isLongPrint(printTimeHours: number, thresholdHours = 12): boolean {
+  return printTimeHours > thresholdHours;
+}
+
+/** Margen sobre precio de venta */
+export function marginFromTotals(totalPrice: number, totalCost: number) {
+  const marginAmount = totalPrice - totalCost;
+  const marginPercent = totalPrice > 0 ? (marginAmount / totalPrice) * 100 : 0;
+  return { marginAmount, marginPercent };
+}
+
+export function lineTotals(
+  quantity: number,
+  unitPrice: number,
+  unitCost: number,
+) {
+  const qty = Math.max(1, Math.floor(quantity));
+  const price = qty * unitPrice;
+  const cost = qty * unitCost;
+  return { quantity: qty, price, cost, ...marginFromTotals(price, cost) };
+}

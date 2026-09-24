@@ -1,0 +1,317 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Brand {
+  id        String    @id @default(cuid())
+  name      String    @unique
+  supplies  Supply[]
+  products  Product[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model Color {
+  id         String           @id @default(cuid())
+  name       String           @unique
+  hex        String?
+  supplies   Supply[]
+  quoteLines QuoteLineColor[]
+  orderLines OrderLineColor[]
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
+}
+
+/** Unidad de compra del insumo (ej. kg). La cotización usa gramos vía gramsPerUnit. */
+model UnitOfMeasure {
+  id           String   @id @default(cuid())
+  code         String   @unique
+  name         String
+  /** Cuántos gramos equivale 1 unidad. Null si no es masa (u, m, etc.). */
+  gramsPerUnit Float?
+  supplies     Supply[]
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Supply {
+  id           String            @id @default(cuid())
+  name         String
+  materialType String?
+  colorId      String?
+  color        Color?            @relation(fields: [colorId], references: [id], onDelete: SetNull)
+  brandId      String?
+  brand        Brand?            @relation(fields: [brandId], references: [id], onDelete: SetNull)
+  unitId       String
+  unit         UnitOfMeasure     @relation(fields: [unitId], references: [id], onDelete: Restrict)
+  /** Costo de 1 unidad de compra (ej. 1 kg = $19000) — se actualiza con la última compra */
+  unitCost     Float
+  /** Stock actual en unidad de compra (kg, u, etc.) */
+  stockQty     Float             @default(0)
+  notes        String?
+  purchases    SupplyPurchase[]
+  adjustments  StockAdjustment[]
+  orderMaterials OrderMaterial[]
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+
+  @@index([brandId])
+  @@index([colorId])
+  @@index([unitId])
+}
+
+model SupplyPurchase {
+  id          String   @id @default(cuid())
+  supplyId    String
+  supply      Supply   @relation(fields: [supplyId], references: [id], onDelete: Cascade)
+  quantity    Float
+  unitCost    Float
+  totalCost   Float
+  supplier    String?
+  notes       String?
+  purchasedAt DateTime @default(now())
+  createdAt   DateTime @default(now())
+
+  @@index([supplyId])
+  @@index([purchasedAt])
+}
+
+model StockAdjustment {
+  id        String   @id @default(cuid())
+  supplyId  String
+  supply    Supply   @relation(fields: [supplyId], references: [id], onDelete: Cascade)
+  /** Positivo = entrada, negativo = salida/merma */
+  deltaQty  Float
+  reason    String
+  notes     String?
+  createdAt DateTime @default(now())
+
+  @@index([supplyId])
+  @@index([createdAt])
+}
+
+model Product {
+  id            String      @id @default(cuid())
+  name          String
+  brandId       String?
+  brand         Brand?      @relation(fields: [brandId], references: [id], onDelete: SetNull)
+  salePrice     Float
+  costEstimate  Float?
+  makerWorldUrl String?
+  notes         String?
+  quoteLines    QuoteLine[]
+  orderLines    OrderLine[]
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@index([brandId])
+}
+
+enum QuoteStatus {
+  draft
+  sent
+  accepted
+  rejected
+}
+
+model Quote {
+  id             String      @id @default(cuid())
+  clientName     String?
+  notes          String?
+  status         QuoteStatus @default(draft)
+  referenceLinks String[]    @default([])
+  totalCost      Float       @default(0)
+  totalPrice     Float       @default(0)
+  marginAmount   Float       @default(0)
+  marginPercent  Float       @default(0)
+  lines          QuoteLine[]
+  orders         Order[]
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+}
+
+model QuoteLine {
+  id          String           @id @default(cuid())
+  quoteId     String
+  quote       Quote            @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  productId   String?
+  product     Product?         @relation(fields: [productId], references: [id], onDelete: SetNull)
+  description String
+  quantity    Int              @default(1)
+  unitPrice   Float
+  unitCost    Float            @default(0)
+  link        String?
+  colors      QuoteLineColor[]
+
+  @@index([quoteId])
+  @@index([productId])
+}
+
+model QuoteLineColor {
+  quoteLineId String
+  colorId     String
+  /** Gramos de este color en la línea (total de la línea) */
+  grams       Float     @default(0)
+  quoteLine   QuoteLine @relation(fields: [quoteLineId], references: [id], onDelete: Cascade)
+  color       Color     @relation(fields: [colorId], references: [id], onDelete: Cascade)
+
+  @@id([quoteLineId, colorId])
+  @@index([colorId])
+}
+
+enum OrderStatus {
+  pending
+  done
+  cancelled
+}
+
+enum PaymentStatus {
+  unpaid
+  partial
+  paid
+}
+
+enum DeliveryStatus {
+  pending
+  delivered
+}
+
+model Order {
+  id             String         @id @default(cuid())
+  clientName     String?
+  notes          String?
+  status         OrderStatus    @default(pending)
+  paymentStatus  PaymentStatus  @default(unpaid)
+  deliveryStatus DeliveryStatus @default(pending)
+  deliveryDate   DateTime?
+  amountPaid     Float          @default(0)
+  quoteId        String?
+  quote          Quote?         @relation(fields: [quoteId], references: [id], onDelete: SetNull)
+  totalCost      Float          @default(0)
+  totalPrice     Float          @default(0)
+  marginAmount   Float          @default(0)
+  marginPercent  Float          @default(0)
+  lines          OrderLine[]
+  payments       OrderPayment[]
+  materials      OrderMaterial[]
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  @@index([quoteId])
+  @@index([status])
+  @@index([paymentStatus])
+  @@index([deliveryStatus])
+  @@index([deliveryDate])
+  @@index([createdAt])
+}
+
+model OrderMaterial {
+  id        String  @id @default(cuid())
+  orderId   String
+  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  supplyId  String
+  supply    Supply  @relation(fields: [supplyId], references: [id], onDelete: Restrict)
+  /** Gramos totales de este insumo en el pedido */
+  grams     Float
+  deducted  Boolean @default(false)
+
+  @@index([orderId])
+  @@index([supplyId])
+  @@index([deducted])
+}
+
+model OrderLine {
+  id          String           @id @default(cuid())
+  orderId     String
+  order       Order            @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId   String?
+  product     Product?         @relation(fields: [productId], references: [id], onDelete: SetNull)
+  description String
+  quantity    Int              @default(1)
+  unitPrice   Float
+  unitCost    Float            @default(0)
+  link        String?
+  colors      OrderLineColor[]
+
+  @@index([orderId])
+  @@index([productId])
+}
+
+model OrderLineColor {
+  orderLineId String
+  colorId     String
+  /** Gramos de este color en la línea (total de la línea) */
+  grams       Float     @default(0)
+  orderLine   OrderLine @relation(fields: [orderLineId], references: [id], onDelete: Cascade)
+  color       Color     @relation(fields: [colorId], references: [id], onDelete: Cascade)
+
+  @@id([orderLineId, colorId])
+  @@index([colorId])
+}
+
+model OrderPayment {
+  id        String   @id @default(cuid())
+  orderId   String
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  amount    Float
+  method    String?
+  notes     String?
+  paidAt    DateTime @default(now())
+  createdAt DateTime @default(now())
+
+  @@index([orderId])
+  @@index([paidAt])
+}
+
+/**
+ * Artículo de vitrina pública (no es producto de venta interno).
+ * Se alimenta desde líneas de pedido con link MakerWorld; único por modelo.
+ */
+model CatalogArticle {
+  id                String   @id @default(cuid())
+  makerWorldModelId Int      @unique
+  makerWorldUrl     String
+  title             String
+  description       String   @default("")
+  imageUrl          String   @default("")
+  /** Precio “desde” — el menor precio de venta visto en pedidos */
+  fromPrice         Float
+  published         Boolean  @default(true)
+  timesOrdered      Int      @default(1)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([published, fromPrice])
+  @@index([createdAt])
+}
+
+/** Parámetros globales de la calculadora (singleton id = default) */
+model PricingSettings {
+  id                 String   @id @default("default")
+  kwhPrice           Float
+  printerWatts       Float
+  plaPricePerKg      Float
+  minRetailPrice     Float
+  minWholesalePrice  Float
+  minBulkPrice       Float
+  bulkQuantity       Int
+  bulkMaxRetailPrice Float
+  longPrintHours     Float    @default(12)
+  /** Tramos de margen. maxCost null = sin tope (Infinity) */
+  tiers              Json
+  updatedAt          DateTime @updatedAt
+}

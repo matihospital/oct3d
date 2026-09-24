@@ -1,0 +1,309 @@
+/* Atlassian-inspired tokens — solo dentro de .ops-shell */
+.ops-shell {
+  --ads-text: #172b4d;
+  --ads-text-subtle: #44546f;
+  --ads-text-subtlest: #626f86;
+  --ads-bg: #f7f8f9;
+  --ads-bg-raised: #ffffff;
+  --ads-bg-input: #ffffff;
+  --ads-bg-neutral: #f1f2f4;
+  --ads-bg-neutral-hover: #dcdfe4;
+  --ads-bg-selected: #e9f2ff;
+  --ads-border: #091e4224;
+  --ads-border-bold: #091e424f;
+  --ads-brand: #0c66e4;
+  --ads-brand-hover: #0055cc;
+  --ads-brand-pressed: #09326c;
+  --ads-danger: #c9372c;
+  --ads-danger-bg: #ffeceb;
+  --ads-success: #216e4e;
+  --ads-success-bg: #dcfff1;
+  --ads-warning: #a54800;
+  --ads-warning-bg: #fff7d6;
+  --ads-discovery: #5e4db2;
+  --ads-discovery-bg: #f3f0ff;
+  --ads-shadow: 0 1px 1px #091e4214, 0 0 1px #091e4229;
+  --ads-radius: 3px;
+  --ads-radius-lg: 8px;
+
+  position: relative;
+  z-index: 10;
+  min-height: 100vh;
+  background: var(--ads-bg);
+  color: var(--ads-text);
+  font-family: var(--font-body), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    "Noto Sans", Ubuntu, "Droid Sans", "Helvetica Neue", sans-serif;
+  font-size: 14px;
+  line-height: 1.428;
+}
+
+.ops-shell a {
+  color: var(--ads-brand);
+  text-decoration: none;
+}
+
+.ops-shell a:hover {
+  text-decoration: underline;
+}
+
+.ops-shell .ops-link-quiet {
+  color: var(--ads-text-subtle);
+  text-decoration: none;
+}
+
+.ops-shell .ops-link-quiet:hover {
+  color: var(--ads-brand);
+  text-decoration: none;
+}
+
+.ops-shell .ops-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 12px;
+  border-radius: var(--ads-radius);
+  border: none;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.1s ease;
+}
+
+.ops-shell .ops-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.ops-shell .ops-btn-primary {
+  background: var(--ads-brand);
+  color: #fff;
+}
+
+.ops-shell .ops-btn-primary:hover:not(:disabled) {
+  background: var(--ads-brand-hover);
+}
+
+.ops-shell .ops-btn-default {
+  background: var(--ads-bg-neutral);
+  color: var(--ads-text);
+}
+
+.ops-shell .ops-btn-default:hover:not(:disabled) {
+  background: var(--ads-bg-neutral-hover);
+}
+
+.ops-shell .ops-btn-subtle {
+  background: transparent;
+  color: var(--ads-text-subtle);
+}
+
+.ops-shell .ops-btn-subtle:hover:not(:disabled) {
+  background: var(--ads-bg-neutral);
+  color: var(--ads-text);
+}
+
+.ops-shell .ops-btn-danger {
+  background: var(--ads-danger-bg);
+  color: var(--ads-danger);
+}
+
+.ops-shell .ops-btn-danger:hover:not(:disabled) {
+  background: #ffd5d2;
+}
+
+.ops-shell .ops-field {
+  width: 100%;
+  height: 40px;
+  padding: 0 10px;
+  border: 2px solid var(--ads-border);
+  border-radius: var(--ads-radius);
+  background: var(--ads-bg-input);
+  color: var(--ads-text);
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.1s ease;
+}
+
+.ops-shell textarea.ops-field {
+  height: auto;
+  min-height: 88px;
+  padding: 8px 10px;
+  resize: vertical;
+}
+
+.ops-shell .ops-field:hover {
+  background: var(--ads-bg);
+}
+
+.ops-shell .ops-field:focus {
+  border-color: var(--ads-brand);
+  background: #fff;
+}
+
+.ops-shell .ops-card {
+  background: var(--ads-bg-raised);
+  border: 1px solid var(--ads-border);
+  border-radius: var(--ads-radius-lg);
+  box-shadow: var(--ads-shadow);
+}
+
+.ops-shell .ops-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.ops-shell .ops-table th {
+  text-align: left;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ads-text-subtle);
+  padding: 8px 12px;
+  border-bottom: 2px solid var(--ads-border);
+  background: var(--ads-bg);
+}
+
+.ops-shell .ops-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--ads-border);
+  vertical-align: middle;
+}
+
+.ops-shell .ops-table tr:hover td {
+  background: var(--ads-bg);
+}
+
+.ops-shell .ops-lozenge {
+  display: inline-flex;
+  align-items: center;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 3px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  line-height: 1;
+}
+
+.ops-shell .ops-lozenge-default {
+  background: var(--ads-bg-neutral);
+  color: var(--ads-text-subtle);
+}
+
+.ops-shell .ops-lozenge-success {
+  background: var(--ads-success-bg);
+  color: var(--ads-success);
+}
+
+.ops-shell .ops-lozenge-moved {
+  background: var(--ads-warning-bg);
+  color: var(--ads-warning);
+}
+
+.ops-shell .ops-lozenge-removed {
+  background: var(--ads-danger-bg);
+  color: var(--ads-danger);
+}
+
+.ops-shell .ops-lozenge-inprogress {
+  background: var(--ads-bg-selected);
+  color: var(--ads-brand);
+}
+
+.ops-shell .ops-lozenge-new {
+  background: var(--ads-discovery-bg);
+  color: var(--ads-discovery);
+}
+
+.ops-shell .ops-section-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--ads-text);
+  margin: 0;
+}
+
+.ops-shell .ops-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ads-text);
+  margin-bottom: 6px;
+}
+
+.ops-shell .ops-hint {
+  display: block;
+  margin-top: 6px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--ads-text-subtle);
+  font-weight: 400;
+}
+
+.ops-shell .ops-empty {
+  padding: 32px 16px;
+  text-align: center;
+  color: var(--ads-text-subtlest);
+  font-size: 14px;
+}
+
+.ops-shell .ops-metric {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  color: var(--ads-success);
+}
+
+.ops-shell .ops-modal-root {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 1.25rem;
+  overflow-y: auto;
+}
+
+.ops-shell .ops-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  background: #091e427a;
+  cursor: pointer;
+}
+
+.ops-shell .ops-modal {
+  position: relative;
+  z-index: 1;
+  width: min(560px, 100%);
+  margin: 4vh auto;
+  background: var(--ads-bg-raised);
+  border: 1px solid var(--ads-border);
+  border-radius: var(--ads-radius-lg);
+  box-shadow: 0 8px 16px #091e4226, 0 0 1px #091e424f;
+}
+
+.ops-shell .ops-modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 1rem 1rem 0.75rem;
+  border-bottom: 1px solid var(--ads-border);
+}
+
+.ops-shell .ops-modal-body {
+  padding: 1rem;
+}
+
+.ops-shell .ops-modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem 1rem;
+  border-top: 1px solid var(--ads-border);
+}
