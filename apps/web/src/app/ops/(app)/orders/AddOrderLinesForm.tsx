@@ -34,10 +34,13 @@ export function AddOrderLinesForm({
   orderId,
   products,
   colors,
+  children,
 }: {
   orderId: string;
   products: ProductOption[];
   colors: ColorOption[];
+  /** Contenido entre los botones (tabla de líneas existentes). */
+  children?: React.ReactNode;
 }) {
   const [lines, setLines] = useState<QuoteLineDraft[]>([emptyLine()]);
   const [saving, setSaving] = useState(false);
@@ -108,9 +111,15 @@ export function AddOrderLinesForm({
     }
   }
 
-  if (!open) {
+  function openButton(border: "b" | "t") {
     return (
-      <div className="flex justify-end border-b border-[var(--ads-border)] px-4 py-3">
+      <div
+        className={`flex justify-end px-4 py-3 ${
+          border === "b"
+            ? "border-b border-[var(--ads-border)]"
+            : "border-t border-[var(--ads-border)]"
+        }`}
+      >
         <button
           type="button"
           className="ops-btn ops-btn-primary"
@@ -122,15 +131,141 @@ export function AddOrderLinesForm({
     );
   }
 
+  if (!open) {
+    return (
+      <>
+        {openButton("b")}
+        {children}
+        {openButton("t")}
+      </>
+    );
+  }
+
   return (
-    <form
-      onSubmit={onSubmit}
-      className="space-y-3 border-b border-[var(--ads-border)] bg-[var(--ads-bg-raised)] p-4"
-    >
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <h3 className="text-sm font-semibold text-[var(--ads-text)]">
-          Nuevas líneas
-        </h3>
+    <>
+      <form
+        onSubmit={onSubmit}
+        className="space-y-3 border-b border-[var(--ads-border)] bg-[var(--ads-bg-raised)] p-4"
+      >
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h3 className="text-sm font-semibold text-[var(--ads-text)]">
+            Nuevas líneas
+          </h3>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              className="ops-btn ops-btn-default"
+              onClick={() => setLines((prev) => [...prev, emptyLine()])}
+            >
+              + Otra línea
+            </button>
+            <button
+              type="button"
+              className="ops-btn ops-btn-subtle"
+              onClick={() => {
+                setOpen(false);
+                setLines([emptyLine()]);
+                setError(null);
+              }}
+            >
+              Cancelar
+            </button>
+          </div>
+        </div>
+
+        {lines.map((line, index) => (
+          <div
+            key={index}
+            className="space-y-2 rounded-[var(--ads-radius-lg)] border border-[var(--ads-border)] bg-[var(--ads-bg)] p-3"
+          >
+            <select
+              className="ops-field"
+              value={line.productId ?? ""}
+              onChange={(e) => onProductPick(index, e.target.value)}
+            >
+              <option value="">Ítem libre / catálogo…</option>
+              {products.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                </option>
+              ))}
+            </select>
+            <input
+              className="ops-field"
+              placeholder="Descripción"
+              value={line.description}
+              onChange={(e) => updateLine(index, { description: e.target.value })}
+              required
+            />
+            <LineColorPicker
+              colors={colors}
+              value={line.colors ?? []}
+              onChange={(next: LineColorUsage[]) =>
+                updateLine(index, { colors: next })
+              }
+            />
+            <div className="grid gap-2 sm:grid-cols-3">
+              <div>
+                <span className="ops-label">Cantidad</span>
+                <input
+                  type="number"
+                  min={1}
+                  className="ops-field"
+                  value={line.quantity}
+                  onChange={(e) =>
+                    updateLine(index, { quantity: Number(e.target.value) || 1 })
+                  }
+                />
+              </div>
+              <div>
+                <span className="ops-label">Precio u.</span>
+                <input
+                  type="number"
+                  step="0.01"
+                  className="ops-field"
+                  value={line.unitPrice}
+                  onChange={(e) =>
+                    updateLine(index, { unitPrice: Number(e.target.value) || 0 })
+                  }
+                />
+              </div>
+              <div>
+                <span className="ops-label">Costo u.</span>
+                <input
+                  type="number"
+                  step="0.01"
+                  className="ops-field"
+                  value={line.unitCost}
+                  onChange={(e) =>
+                    updateLine(index, { unitCost: Number(e.target.value) || 0 })
+                  }
+                />
+              </div>
+            </div>
+            <input
+              className="ops-field"
+              placeholder="Link"
+              value={line.link ?? ""}
+              onChange={(e) => updateLine(index, { link: e.target.value })}
+            />
+            {lines.length > 1 ? (
+              <button
+                type="button"
+                className="ops-btn ops-btn-subtle"
+                onClick={() =>
+                  setLines((prev) => prev.filter((_, i) => i !== index))
+                }
+              >
+                Quitar
+              </button>
+            ) : null}
+          </div>
+        ))}
+
+        <p className="text-sm text-[var(--ads-text-subtle)]">
+          Suma a agregar: {formatMoney(previewTotal)}
+        </p>
+        {error ? <p className="text-sm text-[var(--ads-danger)]">{error}</p> : null}
         <div className="flex flex-wrap gap-2">
           <button
             type="button"
@@ -139,116 +274,13 @@ export function AddOrderLinesForm({
           >
             + Otra línea
           </button>
-          <button
-            type="button"
-            className="ops-btn ops-btn-subtle"
-            onClick={() => {
-              setOpen(false);
-              setLines([emptyLine()]);
-              setError(null);
-            }}
-          >
-            Cancelar
+          <button type="submit" className="ops-btn ops-btn-primary" disabled={saving}>
+            {saving ? "Guardando…" : "Sumar al pedido"}
           </button>
         </div>
-      </div>
-
-      {lines.map((line, index) => (
-        <div
-          key={index}
-          className="space-y-2 rounded-[var(--ads-radius-lg)] border border-[var(--ads-border)] bg-[var(--ads-bg)] p-3"
-        >
-          <select
-            className="ops-field"
-            value={line.productId ?? ""}
-            onChange={(e) => onProductPick(index, e.target.value)}
-          >
-            <option value="">Ítem libre / catálogo…</option>
-            {products.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name}
-              </option>
-            ))}
-          </select>
-          <input
-            className="ops-field"
-            placeholder="Descripción"
-            value={line.description}
-            onChange={(e) => updateLine(index, { description: e.target.value })}
-            required
-          />
-          <LineColorPicker
-            colors={colors}
-            value={line.colors ?? []}
-            onChange={(next: LineColorUsage[]) =>
-              updateLine(index, { colors: next })
-            }
-          />
-          <div className="grid gap-2 sm:grid-cols-3">
-            <div>
-              <span className="ops-label">Cantidad</span>
-              <input
-                type="number"
-                min={1}
-                className="ops-field"
-                value={line.quantity}
-                onChange={(e) =>
-                  updateLine(index, { quantity: Number(e.target.value) || 1 })
-                }
-              />
-            </div>
-            <div>
-              <span className="ops-label">Precio u.</span>
-              <input
-                type="number"
-                step="0.01"
-                className="ops-field"
-                value={line.unitPrice}
-                onChange={(e) =>
-                  updateLine(index, { unitPrice: Number(e.target.value) || 0 })
-                }
-              />
-            </div>
-            <div>
-              <span className="ops-label">Costo u.</span>
-              <input
-                type="number"
-                step="0.01"
-                className="ops-field"
-                value={line.unitCost}
-                onChange={(e) =>
-                  updateLine(index, { unitCost: Number(e.target.value) || 0 })
-                }
-              />
-            </div>
-          </div>
-          <input
-            className="ops-field"
-            placeholder="Link"
-            value={line.link ?? ""}
-            onChange={(e) => updateLine(index, { link: e.target.value })}
-          />
-          {lines.length > 1 ? (
-            <button
-              type="button"
-              className="ops-btn ops-btn-subtle"
-              onClick={() =>
-                setLines((prev) => prev.filter((_, i) => i !== index))
-              }
-            >
-              Quitar
-            </button>
-          ) : null}
-        </div>
-      ))}
-
-      <p className="text-sm text-[var(--ads-text-subtle)]">
-        Suma a agregar: {formatMoney(previewTotal)}
-      </p>
-      {error ? <p className="text-sm text-[var(--ads-danger)]">{error}</p> : null}
-      <button type="submit" className="ops-btn ops-btn-primary" disabled={saving}>
-        {saving ? "Guardando…" : "Sumar al pedido"}
-      </button>
-    </form>
+      </form>
+      {children}
+    </>
   );
 }
+

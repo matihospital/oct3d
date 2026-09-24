@@ -283,6 +283,15 @@ export function OrderForm({
             ) : null}
           </div>
         ))}
+        <div className="flex justify-end">
+          <button
+            type="button"
+            className="ops-btn ops-btn-default"
+            onClick={() => setLines((prev) => [...prev, emptyLine()])}
+          >
+            Agregar línea
+          </button>
+        </div>
       </section>
 
       <section className="ops-card space-y-3 p-4">

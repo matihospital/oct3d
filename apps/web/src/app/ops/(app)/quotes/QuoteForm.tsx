@@ -98,6 +98,22 @@ export function QuoteForm({
     setLines((prev) => prev.map((line, i) => (i === index ? { ...line, ...patch } : line)));
   }
 
+  function addManualLine() {
+    setLines((prev) => [
+      ...prev,
+      {
+        description: "",
+        quantity: 1,
+        unitPrice: 0,
+        unitCost: 0,
+        link: "",
+        productId: "",
+        colorIds: [],
+        colors: [],
+      },
+    ]);
+  }
+
   function onProductPick(index: number, productId: string) {
     const product = products.find((p) => p.id === productId);
     if (!product) {
@@ -456,21 +472,7 @@ export function QuoteForm({
           <button
             type="button"
             className="ops-btn ops-btn-default"
-            onClick={() =>
-              setLines((prev) => [
-                ...prev,
-                {
-                  description: "",
-                  quantity: 1,
-                  unitPrice: 0,
-                  unitCost: 0,
-                  link: "",
-                  productId: "",
-                  colorIds: [],
-                  colors: [],
-                },
-              ])
-            }
+            onClick={addManualLine}
           >
             + Agregar ítem a mano
           </button>
@@ -603,6 +605,16 @@ export function QuoteForm({
             </div>
           );
         })}
+
+        <div className="flex justify-end">
+          <button
+            type="button"
+            className="ops-btn ops-btn-default"
+            onClick={addManualLine}
+          >
+            + Agregar ítem a mano
+          </button>
+        </div>
       </section>
 
       <section className="ops-card p-4">

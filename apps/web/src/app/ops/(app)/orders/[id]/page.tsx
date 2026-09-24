@@ -38,6 +38,62 @@ function toDateInput(d: Date | null | undefined): string {
   return `${y}-${m}-${day}`;
 }
 
+type OrderLineRow = {
+  id: string;
+  description: string;
+  quantity: number;
+  unitPrice: number;
+  unitCost: number;
+  link: string | null;
+  colors: Array<{
+    grams: number;
+    color: { name: string; hex: string | null };
+  }>;
+};
+
+function OrderLinesTable({ lines }: { lines: OrderLineRow[] }) {
+  return (
+    <table className="ops-table">
+      <thead>
+        <tr>
+          <th>Descripción</th>
+          <th>Cant.</th>
+          <th>Precio</th>
+          <th>Costo</th>
+          <th>Margen línea</th>
+        </tr>
+      </thead>
+      <tbody>
+        {lines.map((line) => (
+          <tr key={line.id}>
+            <td>
+              <div className="font-medium">{line.description}</div>
+              <ColorBadges
+                colors={line.colors.map((c) => ({
+                  name: c.color.name,
+                  hex: c.color.hex,
+                  grams: c.grams,
+                }))}
+              />
+              {line.link ? (
+                <a href={line.link} target="_blank" rel="noreferrer" className="text-xs">
+                  Link
+                </a>
+              ) : null}
+            </td>
+            <td>{line.quantity}</td>
+            <td className="tabular-nums">{formatMoney(line.unitPrice)}</td>
+            <td className="tabular-nums">{formatMoney(line.unitCost)}</td>
+            <td className="ops-metric">
+              {formatMoney(line.quantity * (line.unitPrice - line.unitCost))}
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+}
+
 export default async function OrderDetailPage({
   params,
 }: {
@@ -393,46 +449,12 @@ export default async function OrderDetailPage({
             orderId={order.id}
             products={products}
             colors={colors}
-          />
-        ) : null}
-        <table className="ops-table">
-          <thead>
-            <tr>
-              <th>Descripción</th>
-              <th>Cant.</th>
-              <th>Precio</th>
-              <th>Costo</th>
-              <th>Margen línea</th>
-            </tr>
-          </thead>
-          <tbody>
-            {order.lines.map((line) => (
-              <tr key={line.id}>
-                <td>
-                  <div className="font-medium">{line.description}</div>
-                  <ColorBadges
-                    colors={line.colors.map((c) => ({
-                      name: c.color.name,
-                      hex: c.color.hex,
-                      grams: c.grams,
-                    }))}
-                  />
-                  {line.link ? (
-                    <a href={line.link} target="_blank" rel="noreferrer" className="text-xs">
-                      Link
-                    </a>
-                  ) : null}
-                </td>
-                <td>{line.quantity}</td>
-                <td className="tabular-nums">{formatMoney(line.unitPrice)}</td>
-                <td className="tabular-nums">{formatMoney(line.unitCost)}</td>
-                <td className="ops-metric">
-                  {formatMoney(line.quantity * (line.unitPrice - line.unitCost))}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+          >
+            <OrderLinesTable lines={order.lines} />
+          </AddOrderLinesForm>
+        ) : (
+          <OrderLinesTable lines={order.lines} />
+        )}
       </section>
 
       <Link href="/ops/orders" className="ops-btn ops-btn-subtle" style={{ textDecoration: "none" }}>
