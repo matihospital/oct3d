@@ -11,7 +11,14 @@ import {
 
 export const dynamic = "force-dynamic";
 
-export default async function InventoryPage() {
+export default async function InventoryPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ stock?: string }>;
+}) {
+  const sp = await searchParams;
+  const lowOnly = sp.stock === "low";
+
   const [supplies, purchases, adjustments, committedMap] = await Promise.all([
     prisma.supply.findMany({
       include: { brand: true, color: true, unit: true },
@@ -32,10 +39,14 @@ export default async function InventoryPage() {
 
   const today = new Date().toISOString().slice(0, 10);
   const defaultSupplyId = supplies[0]?.id ?? "";
-  const lowAvailable = supplies.filter((s) => {
+  const rows = supplies.map((s) => {
     const committed = committedMap.get(s.id) ?? 0;
-    return s.stockQty - committed <= 0.5;
-  }).length;
+    const available = s.stockQty - committed;
+    const low = available <= 0.5;
+    return { s, committed, available, low };
+  });
+  const lowAvailable = rows.filter((r) => r.low).length;
+  const visible = lowOnly ? rows.filter((r) => r.low) : rows;
 
   function supplyLabel(s: (typeof supplies)[0]) {
     return [s.materialType || s.name, s.brand?.name, s.color?.name]
@@ -64,14 +75,32 @@ export default async function InventoryPage() {
       ) : null}
 
       <section className="ops-card overflow-hidden">
-        <div className="border-b border-[var(--ads-border)] px-4 py-3">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--ads-border)] px-4 py-3">
           <h2 className="ops-section-title">Stock actual</h2>
+          <div className="flex flex-wrap gap-2">
+            <Link
+              href="/ops/inventory"
+              className={`ops-btn ${!lowOnly ? "ops-btn-primary" : "ops-btn-subtle"}`}
+              style={{ textDecoration: "none" }}
+            >
+              Todos
+            </Link>
+            <Link
+              href="/ops/inventory?stock=low"
+              className={`ops-btn ${lowOnly ? "ops-btn-primary" : "ops-btn-subtle"}`}
+              style={{ textDecoration: "none" }}
+            >
+              Stock bajo ({lowAvailable})
+            </Link>
+          </div>
         </div>
         {supplies.length === 0 ? (
           <p className="ops-empty">
             Todavía no hay insumos.{" "}
             <Link href="/ops/catalog">Creá uno en Catálogo</Link>.
           </p>
+        ) : visible.length === 0 ? (
+          <p className="ops-empty">No hay insumos con stock bajo.</p>
         ) : (
           <table className="ops-table">
             <thead>
@@ -85,11 +114,7 @@ export default async function InventoryPage() {
               </tr>
             </thead>
             <tbody>
-              {supplies.map((s) => {
-                const committed = committedMap.get(s.id) ?? 0;
-                const available = s.stockQty - committed;
-                const low = available <= 0.5;
-                return (
+              {visible.map(({ s, committed, available, low }) => (
                   <tr key={s.id}>
                     <td>
                       <div className="font-medium">{supplyLabel(s)}</div>
@@ -138,8 +163,7 @@ export default async function InventoryPage() {
                       </form>
                     </td>
                   </tr>
-                );
-              })}
+              ))}
             </tbody>
           </table>
         )}

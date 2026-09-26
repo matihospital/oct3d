@@ -102,6 +102,7 @@ export default async function EditOrderPage({
           materials: pendingMaterials.map((m) => ({
             supplyId: m.supplyId,
             grams: m.grams,
+            quantity: m.quantity,
           })),
         }}
       />

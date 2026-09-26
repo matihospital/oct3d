@@ -225,8 +225,10 @@ model OrderMaterial {
   order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
   supplyId  String
   supply    Supply  @relation(fields: [supplyId], references: [id], onDelete: Restrict)
-  /** Gramos totales de este insumo en el pedido */
-  grams     Float
+  /** Gramos totales (insumos con unidad de masa). */
+  grams     Float   @default(0)
+  /** Cantidad en unidad de compra (insumos sin masa, ej. vasos). */
+  quantity  Float   @default(0)
   deducted  Boolean @default(false)
 
   @@index([orderId])
@@ -279,12 +281,18 @@ model OrderPayment {
 
 /**
  * Artículo de vitrina pública (no es producto de venta interno).
- * Se alimenta desde líneas de pedido con link MakerWorld; único por modelo.
+ * Se alimenta desde líneas de pedido (con o sin MakerWorld).
  */
 model CatalogArticle {
   id                String   @id @default(cuid())
-  makerWorldModelId Int      @unique
-  makerWorldUrl     String
+  /** Null si el artículo no viene de MakerWorld. */
+  makerWorldModelId Int?     @unique
+  makerWorldUrl     String   @default("")
+  /**
+   * Clave de deduplicación para piezas sin MakerWorld
+   * (ej. manual:titulo-normalizado).
+   */
+  sourceKey         String?  @unique
   title             String
   description       String   @default("")
   imageUrl          String   @default("")

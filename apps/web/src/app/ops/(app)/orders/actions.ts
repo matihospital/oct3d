@@ -79,7 +79,7 @@ export async function createOrder(input: {
       ...(materials ? { materials } : {}),
     },
   });
-  await syncCatalogArticlesFromLines(input.lines);
+  await syncCatalogArticlesFromLines(input.lines, { includeManualDrafts: true });
   revalidateOrderPaths(order.id);
   revalidatePath("/catalogo");
   revalidatePath("/ops/showcase");
@@ -157,7 +157,8 @@ export async function updateOrder(
             ? {
                 create: pendingMaterials.map((m) => ({
                   supplyId: m.supplyId,
-                  grams: m.grams,
+                  grams: m.grams ?? 0,
+                  quantity: m.quantity ?? 0,
                   deducted: false,
                 })),
               }
@@ -166,7 +167,10 @@ export async function updateOrder(
     });
   });
 
-  await syncCatalogArticlesFromLines(input.lines, { countOrder: false });
+  await syncCatalogArticlesFromLines(input.lines, {
+    countOrder: false,
+    includeManualDrafts: true,
+  });
   revalidateOrderPaths(id);
   revalidatePath("/catalogo");
   revalidatePath("/ops/showcase");
@@ -215,9 +219,10 @@ export async function addOrderLines(id: string, lines: QuoteLineDraft[]) {
     }
 
     for (const draft of fromColors) {
+      const grams = draft.grams ?? 0;
       const pending = pendingBySupply.get(draft.supplyId);
       if (pending) {
-        const nextGrams = pending.grams + draft.grams;
+        const nextGrams = pending.grams + grams;
         await tx.orderMaterial.update({
           where: { id: pending.id },
           data: { grams: nextGrams },
@@ -228,7 +233,8 @@ export async function addOrderLines(id: string, lines: QuoteLineDraft[]) {
           data: {
             orderId: id,
             supplyId: draft.supplyId,
-            grams: draft.grams,
+            grams,
+            quantity: 0,
             deducted: false,
           },
         });
@@ -247,7 +253,10 @@ export async function addOrderLines(id: string, lines: QuoteLineDraft[]) {
     });
   });
 
-  await syncCatalogArticlesFromLines(cleaned, { countOrder: false });
+  await syncCatalogArticlesFromLines(cleaned, {
+    countOrder: false,
+    includeManualDrafts: true,
+  });
   revalidateOrderPaths(id);
   revalidatePath("/catalogo");
   revalidatePath("/ops/showcase");

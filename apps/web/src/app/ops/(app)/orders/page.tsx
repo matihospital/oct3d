@@ -37,8 +37,11 @@ export default async function OrdersPage({
       ? (sp.status as OrderStatus)
       : undefined;
   const paymentFilter =
-    sp.payment === "unpaid" || sp.payment === "partial" || sp.payment === "paid"
-      ? (sp.payment as PaymentStatus)
+    sp.payment === "unpaid" ||
+    sp.payment === "partial" ||
+    sp.payment === "paid" ||
+    sp.payment === "due"
+      ? sp.payment
       : undefined;
   const deliveryFilter =
     sp.delivery === "pending" || sp.delivery === "delivered"
@@ -50,7 +53,11 @@ export default async function OrdersPage({
   const orders = await prisma.order.findMany({
     where: {
       ...(statusFilter ? { status: statusFilter } : {}),
-      ...(paymentFilter ? { paymentStatus: paymentFilter } : {}),
+      ...(paymentFilter === "due"
+        ? { paymentStatus: { in: ["unpaid", "partial"] } }
+        : paymentFilter
+          ? { paymentStatus: paymentFilter as PaymentStatus }
+          : {}),
       ...(deliveryFilter ? { deliveryStatus: deliveryFilter } : {}),
     },
     orderBy:
@@ -74,6 +81,9 @@ export default async function OrdersPage({
           return a.deliveryDate.getTime() - b.deliveryDate.getTime();
         })
       : orders;
+
+  const sumTotalPrice = sorted.reduce((s, o) => s + o.totalPrice, 0);
+  const sumMargin = sorted.reduce((s, o) => s + o.marginAmount, 0);
 
   function hrefWith(patch: Record<string, string | undefined>) {
     const params = new URLSearchParams();
@@ -99,6 +109,7 @@ export default async function OrdersPage({
   ];
   const paymentFilters = [
     { label: "Cobro: todos", value: "" },
+    { label: "Por cobrar", value: "due" },
     { label: "Sin cobrar", value: "unpaid" },
     { label: "Parcial", value: "partial" },
     { label: "Cobrados", value: "paid" },
@@ -237,6 +248,19 @@ export default async function OrdersPage({
                 );
               })}
             </tbody>
+            <tfoot>
+              <tr className="border-t-2 border-[var(--ads-border)]">
+                <td colSpan={4} className="font-semibold text-[var(--ads-text)]">
+                  Total ({sorted.length} pedido{sorted.length === 1 ? "" : "s"})
+                </td>
+                <td className="tabular-nums font-semibold">
+                  {formatMoney(sumTotalPrice)}
+                </td>
+                <td className="ops-metric font-semibold">
+                  {formatMoney(sumMargin)}
+                </td>
+              </tr>
+            </tfoot>
           </table>
         )}
       </section>

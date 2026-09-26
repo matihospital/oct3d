@@ -12,14 +12,15 @@ export const dynamic = "force-dynamic";
 
 export default async function ShowcasePage() {
   const articles = await prisma.catalogArticle.findMany({
-    orderBy: { updatedAt: "desc" },
+    orderBy: [{ published: "asc" }, { updatedAt: "desc" }],
   });
+  const drafts = articles.filter((a) => !a.published).length;
 
   return (
     <div className="space-y-6">
       <PageHeader
         title="Vitrina / catálogo público"
-        description="Se completa al guardar pedidos con link MakerWorld. Un artículo por modelo (sin duplicar)."
+        description="Los pedidos con MakerWorld publican solos. Sin link se crea un borrador oculto para completar imagen y datos."
         breadcrumbs={[{ label: "Ops", href: "/ops" }, { label: "Vitrina" }]}
         actions={
           <a
@@ -34,10 +35,16 @@ export default async function ShowcasePage() {
         }
       />
 
+      {drafts > 0 ? (
+        <p className="rounded-[var(--ads-radius)] border border-[var(--ads-border)] bg-[var(--ads-bg-raised)] px-4 py-3 text-sm">
+          {drafts} borrador(es) sin publicar — completá imagen/descripción y marcá
+          Publicado.
+        </p>
+      ) : null}
+
       {articles.length === 0 ? (
         <p className="ops-empty ops-card">
-          Todavía no hay artículos. Creá un pedido con una línea que tenga link de
-          MakerWorld.
+          Todavía no hay artículos. Se generan al guardar pedidos (con o sin MakerWorld).
         </p>
       ) : (
         <div className="space-y-4">
@@ -66,17 +73,23 @@ export default async function ShowcasePage() {
                     {a.published ? (
                       <span className="text-[var(--ads-success)]">Público</span>
                     ) : (
-                      <span className="text-[var(--ads-danger)]">Oculto</span>
+                      <span className="text-[var(--ads-danger)]">Borrador</span>
                     )}
                   </p>
-                  <a
-                    href={a.makerWorldUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-xs"
-                  >
-                    MakerWorld #{a.makerWorldModelId}
-                  </a>
+                  {a.makerWorldModelId != null ? (
+                    <a
+                      href={a.makerWorldUrl || "#"}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-xs"
+                    >
+                      MakerWorld #{a.makerWorldModelId}
+                    </a>
+                  ) : (
+                    <span className="text-xs text-[var(--ads-text-subtlest)]">
+                      Sin MakerWorld — cargá imagen a mano
+                    </span>
+                  )}
                 </div>
                 <div className="flex flex-wrap gap-1">
                   <form action={toggleCatalogArticlePublished.bind(null, a.id)}>
@@ -94,6 +107,7 @@ export default async function ShowcasePage() {
 
               <form
                 action={updateCatalogArticle.bind(null, a.id)}
+                encType="multipart/form-data"
                 className="grid gap-2 border-t border-[var(--ads-border)] pt-3 md:grid-cols-2"
               >
                 <div>
@@ -126,12 +140,25 @@ export default async function ShowcasePage() {
                     defaultValue={a.description}
                   />
                 </div>
-                <div className="md:col-span-2">
-                  <span className="ops-label">URL imagen</span>
+                <div>
+                  <span className="ops-label">Subir imagen</span>
+                  <input
+                    name="imageFile"
+                    type="file"
+                    accept="image/*"
+                    className="ops-field"
+                  />
+                  <span className="ops-hint">JPG/PNG/WebP, máx. ~900 KB</span>
+                </div>
+                <div>
+                  <span className="ops-label">O URL de imagen</span>
                   <input
                     name="imageUrl"
                     className="ops-field"
-                    defaultValue={a.imageUrl}
+                    defaultValue={
+                      a.imageUrl.startsWith("data:") ? "" : a.imageUrl
+                    }
+                    placeholder="https://..."
                   />
                 </div>
                 <label className="flex items-center gap-2 text-sm text-[var(--ads-text-subtle)]">
@@ -142,6 +169,10 @@ export default async function ShowcasePage() {
                     className="h-4 w-4"
                   />
                   Publicado en /catalogo
+                </label>
+                <label className="flex items-center gap-2 text-sm text-[var(--ads-text-subtle)]">
+                  <input name="clearImage" type="checkbox" className="h-4 w-4" />
+                  Quitar imagen actual
                 </label>
                 <div className="flex justify-end md:col-span-2">
                   <button type="submit" className="ops-btn ops-btn-primary">
@@ -155,8 +186,8 @@ export default async function ShowcasePage() {
       )}
 
       <p className="text-sm text-[var(--ads-text-subtle)]">
-        Tip: la próxima vez que el mismo modelo entre en un pedido, no se duplica;
-        solo baja el “desde” si el precio es menor.
+        Tip: el mismo modelo MakerWorld no se duplica; sin link se agrupa por título
+        normalizado como borrador.
       </p>
       <Link href="/ops" className="ops-btn ops-btn-subtle" style={{ textDecoration: "none" }}>
         Volver

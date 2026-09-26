@@ -11,23 +11,32 @@ import {
 export const dynamic = "force-dynamic";
 
 export default async function OpsHomePage() {
-  const [products, quotes, orders, openOrders, lowStock, unpaid] = await Promise.all([
-    prisma.product.count(),
-    prisma.quote.count(),
-    prisma.order.count(),
-    prisma.order.findMany({
-      where: { status: "pending" },
-      orderBy: [{ deliveryDate: "asc" }, { createdAt: "desc" }],
-      take: 8,
-    }),
-    prisma.supply.count({ where: { stockQty: { lte: 0.5 } } }),
-    prisma.order.count({
-      where: {
-        status: { not: "cancelled" },
-        paymentStatus: { in: ["unpaid", "partial"] },
-      },
-    }),
-  ]);
+  const [products, quotes, orders, openOrders, lowStock, unpaidOrders] =
+    await Promise.all([
+      prisma.product.count(),
+      prisma.quote.count(),
+      prisma.order.count(),
+      prisma.order.findMany({
+        where: { status: "pending" },
+        orderBy: [{ deliveryDate: "asc" }, { createdAt: "desc" }],
+        take: 8,
+      }),
+      prisma.supply.count({ where: { stockQty: { lte: 0.5 } } }),
+      prisma.order.findMany({
+        where: {
+          status: { not: "cancelled" },
+          paymentStatus: { in: ["unpaid", "partial"] },
+        },
+        orderBy: [{ deliveryDate: "asc" }, { createdAt: "desc" }],
+        take: 12,
+      }),
+    ]);
+
+  const unpaidCount = unpaidOrders.length;
+  const unpaidBalance = unpaidOrders.reduce(
+    (s, o) => s + Math.max(0, o.totalPrice - o.amountPaid),
+    0,
+  );
 
   const sortedOpen = [...openOrders].sort((a, b) => {
     if (!a.deliveryDate && !b.deliveryDate) {
@@ -61,17 +70,82 @@ export default async function OpsHomePage() {
         <StatCard label="Pedidos" value={String(orders)} href="/ops/orders" />
         <StatCard
           label="Por cobrar"
-          value={String(unpaid)}
-          href="/ops/orders?payment=unpaid"
+          value={`${unpaidCount}`}
+          hint={unpaidCount > 0 ? formatMoney(unpaidBalance) : undefined}
+          href="/ops/orders?payment=due"
         />
       </div>
 
       {lowStock > 0 ? (
         <p className="rounded-[var(--ads-radius)] border border-[var(--ads-border)] bg-[var(--ads-bg-raised)] px-4 py-3 text-sm">
           {lowStock} insumo(s) con stock bajo (≤ 0,5).{" "}
-          <Link href="/ops/inventory">Revisar inventario</Link>
+          <Link href="/ops/inventory?stock=low">Revisar inventario</Link>
         </p>
       ) : null}
+
+      <section className="ops-card overflow-hidden">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--ads-border)] px-4 py-3">
+          <div>
+            <h2 className="ops-section-title">Pendientes de cobrar</h2>
+            {unpaidCount > 0 ? (
+              <p className="mt-1 text-sm text-[var(--ads-text-subtle)]">
+                {unpaidCount} pedido{unpaidCount === 1 ? "" : "s"} · total a cobrar{" "}
+                <span className="font-semibold tabular-nums text-[var(--ads-text)]">
+                  {formatMoney(unpaidBalance)}
+                </span>
+              </p>
+            ) : null}
+          </div>
+          <Link
+            href="/ops/orders?payment=due"
+            className="text-sm"
+            style={{ textDecoration: "none" }}
+          >
+            Ver todos
+          </Link>
+        </div>
+        {unpaidOrders.length === 0 ? (
+          <p className="ops-empty">No hay saldos pendientes.</p>
+        ) : (
+          <table className="ops-table">
+            <thead>
+              <tr>
+                <th>Cliente</th>
+                <th>Cobro</th>
+                <th>Total</th>
+                <th>Debe</th>
+              </tr>
+            </thead>
+            <tbody>
+              {unpaidOrders.map((o) => {
+                const balance = Math.max(0, o.totalPrice - o.amountPaid);
+                return (
+                  <tr key={o.id}>
+                    <td>
+                      <Link href={`/ops/orders/${o.id}`} style={{ textDecoration: "none" }}>
+                        {o.clientName || "Sin cliente"}
+                      </Link>
+                    </td>
+                    <td>{paymentStatusLozenge(o.paymentStatus)}</td>
+                    <td className="tabular-nums">{formatMoney(o.totalPrice)}</td>
+                    <td className="ops-metric tabular-nums">{formatMoney(balance)}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+            <tfoot>
+              <tr className="border-t-2 border-[var(--ads-border)]">
+                <td colSpan={3} className="font-semibold">
+                  Total a cobrar
+                </td>
+                <td className="ops-metric font-semibold tabular-nums">
+                  {formatMoney(unpaidBalance)}
+                </td>
+              </tr>
+            </tfoot>
+          </table>
+        )}
+      </section>
 
       <section className="ops-card overflow-hidden">
         <div className="flex items-center justify-between border-b border-[var(--ads-border)] px-4 py-3">
@@ -132,10 +206,12 @@ export default async function OpsHomePage() {
 function StatCard({
   label,
   value,
+  hint,
   href,
 }: {
   label: string;
   value: string;
+  hint?: string;
   href: string;
 }) {
   return (
@@ -148,6 +224,11 @@ function StatCard({
         {label}
       </p>
       <p className="mt-1 text-3xl font-semibold tabular-nums text-[var(--ads-text)]">{value}</p>
+      {hint ? (
+        <p className="mt-1 text-sm font-medium tabular-nums text-[var(--ads-text-subtle)]">
+          {hint}
+        </p>
+      ) : null}
     </Link>
   );
 }

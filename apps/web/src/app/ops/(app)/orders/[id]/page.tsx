@@ -386,15 +386,14 @@ export default async function OrderDetailPage({
         </div>
         {order.materials.length === 0 ? (
           <p className="ops-empty">
-            Sin materiales. Agregá insumos y gramos al editar el pedido para comprometer
-            stock.
+            Sin materiales. Agregá insumos al editar el pedido para comprometer stock.
           </p>
         ) : (
           <table className="ops-table">
             <thead>
               <tr>
                 <th>Insumo</th>
-                <th>Gramos</th>
+                <th>Cantidad</th>
                 <th>Equiv.</th>
                 <th>Estado</th>
               </tr>
@@ -409,14 +408,17 @@ export default async function OrderDetailPage({
                   .filter(Boolean)
                   .join(" · ");
                 const gpu = m.supply.unit.gramsPerUnit;
-                const equiv =
-                  gpu != null && gpu > 0
-                    ? `${(m.grams / gpu).toFixed(3)} ${m.supply.unit.code}`
-                    : "—";
+                const isMass = gpu != null && gpu > 0;
+                const amountLabel = isMass
+                  ? `${m.grams} g`
+                  : `${m.quantity} ${m.supply.unit.code}`;
+                const equiv = isMass
+                  ? `${(m.grams / gpu!).toFixed(3)} ${m.supply.unit.code}`
+                  : "—";
                 return (
                   <tr key={m.id}>
                     <td className="font-medium">{label}</td>
-                    <td className="tabular-nums">{m.grams} g</td>
+                    <td className="tabular-nums">{amountLabel}</td>
                     <td className="tabular-nums text-[var(--ads-text-subtle)]">{equiv}</td>
                     <td>
                       {m.deducted ? (

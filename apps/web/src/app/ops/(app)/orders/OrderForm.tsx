@@ -48,7 +48,7 @@ function emptyLine(): QuoteLineDraft {
 }
 
 function emptyMaterial(defaultSupplyId = ""): OrderMaterialDraft {
-  return { supplyId: defaultSupplyId, grams: 0 };
+  return { supplyId: defaultSupplyId, grams: 0, quantity: 0 };
 }
 
 export function OrderForm({
@@ -64,11 +64,7 @@ export function OrderForm({
   orderId?: string;
   initial?: OrderFormInitial;
 }) {
-  const massSupplies = useMemo(
-    () => supplies.filter((s) => s.gramsPerUnit != null && s.gramsPerUnit > 0),
-    [supplies],
-  );
-  const defaultSupplyId = massSupplies[0]?.id ?? "";
+  const defaultSupplyId = supplies[0]?.id ?? "";
 
   const [clientName, setClientName] = useState(initial?.clientName ?? "");
   const [notes, setNotes] = useState(initial?.notes ?? "");
@@ -79,9 +75,7 @@ export function OrderForm({
     initial?.lines?.length ? initial.lines : [emptyLine()],
   );
   const [materials, setMaterials] = useState<OrderMaterialDraft[]>(
-    initial?.materials?.length
-      ? initial.materials
-      : [],
+    initial?.materials?.length ? initial.materials : [],
   );
 
   const totals = useMemo(() => {
@@ -137,9 +131,12 @@ export function OrderForm({
         }))
         .filter((l) => l.description);
       if (!cleaned.length) throw new Error("Agregá al menos una línea con descripción");
-      const cleanedMaterials = materials.filter(
-        (m) => m.supplyId && Number(m.grams) > 0,
-      );
+      const cleanedMaterials = materials.filter((m) => {
+        if (!m.supplyId) return false;
+        const supply = supplies.find((s) => s.id === m.supplyId);
+        const isMass = supply?.gramsPerUnit != null && supply.gramsPerUnit > 0;
+        return isMass ? Number(m.grams) > 0 : Number(m.quantity) > 0;
+      });
       const payload = {
         clientName,
         notes,
@@ -299,14 +296,14 @@ export function OrderForm({
           <div>
             <h2 className="ops-section-title">Materiales extra (stock)</h2>
             <p className="mt-1 text-sm text-[var(--ads-text-subtle)]">
-              Los gramos por color de las líneas ya generan compromiso de stock (si hay
-              insumo de ese color). Acá podés sumar filamento extra o sin color.
+              Filamento por gramos o insumos por unidad (vasos, etc.). Los colores de
+              las líneas ya comprometen stock de filamento si hay insumo de ese color.
             </p>
           </div>
           <button
             type="button"
             className="ops-btn ops-btn-default"
-            disabled={massSupplies.length === 0}
+            disabled={supplies.length === 0}
             onClick={() =>
               setMaterials((prev) => [...prev, emptyMaterial(defaultSupplyId)])
             }
@@ -314,9 +311,9 @@ export function OrderForm({
             Agregar material
           </button>
         </div>
-        {massSupplies.length === 0 ? (
+        {supplies.length === 0 ? (
           <p className="ops-empty py-2">
-            No hay insumos con unidad de masa. Cargá filamento en Catálogo.
+            No hay insumos. Cargalos en Catálogo.
           </p>
         ) : materials.length === 0 ? (
           <p className="text-sm text-[var(--ads-text-subtle)]">
@@ -324,10 +321,12 @@ export function OrderForm({
           </p>
         ) : (
           materials.map((m, index) => {
-            const supply = massSupplies.find((s) => s.id === m.supplyId);
+            const supply = supplies.find((s) => s.id === m.supplyId);
+            const isMass =
+              supply?.gramsPerUnit != null && supply.gramsPerUnit > 0;
             const kgHint =
-              supply?.gramsPerUnit && m.grams > 0
-                ? `≈ ${(m.grams / supply.gramsPerUnit).toFixed(3)} ${supply.unitCode}`
+              isMass && supply?.gramsPerUnit && (m.grams ?? 0) > 0
+                ? `≈ ${((m.grams ?? 0) / supply.gramsPerUnit).toFixed(3)} ${supply.unitCode}`
                 : null;
             return (
               <div
@@ -339,9 +338,15 @@ export function OrderForm({
                   <select
                     className="ops-field"
                     value={m.supplyId}
-                    onChange={(e) => updateMaterial(index, { supplyId: e.target.value })}
+                    onChange={(e) =>
+                      updateMaterial(index, {
+                        supplyId: e.target.value,
+                        grams: 0,
+                        quantity: 0,
+                      })
+                    }
                   >
-                    {massSupplies.map((s) => (
+                    {supplies.map((s) => (
                       <option key={s.id} value={s.id}>
                         {s.label} (stock {s.stockQty} {s.unitCode})
                       </option>
@@ -349,18 +354,40 @@ export function OrderForm({
                   </select>
                 </div>
                 <div>
-                  <span className="ops-label">Gramos</span>
-                  <input
-                    type="number"
-                    min="0"
-                    step="any"
-                    className="ops-field"
-                    value={m.grams || ""}
-                    onChange={(e) =>
-                      updateMaterial(index, { grams: Number(e.target.value) || 0 })
-                    }
-                    placeholder="45"
-                  />
+                  <span className="ops-label">
+                    {isMass ? "Gramos" : `Cantidad (${supply?.unitCode ?? "u"})`}
+                  </span>
+                  {isMass ? (
+                    <input
+                      type="number"
+                      min="0"
+                      step="any"
+                      className="ops-field"
+                      value={m.grams || ""}
+                      onChange={(e) =>
+                        updateMaterial(index, {
+                          grams: Number(e.target.value) || 0,
+                          quantity: 0,
+                        })
+                      }
+                      placeholder="45"
+                    />
+                  ) : (
+                    <input
+                      type="number"
+                      min="0"
+                      step="any"
+                      className="ops-field"
+                      value={m.quantity || ""}
+                      onChange={(e) =>
+                        updateMaterial(index, {
+                          quantity: Number(e.target.value) || 0,
+                          grams: 0,
+                        })
+                      }
+                      placeholder="1"
+                    />
+                  )}
                   {kgHint ? <span className="ops-hint">{kgHint}</span> : null}
                 </div>
                 <div className="flex items-end">

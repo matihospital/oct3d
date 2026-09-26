@@ -3,21 +3,42 @@ import type { LineColorUsage } from "@/lib/line-colors";
 
 export type OrderMaterialDraft = {
   supplyId: string;
+  /** Gramos (insumos con masa). */
+  grams?: number;
+  /** Cantidad en unidad de compra (insumos sin masa). */
+  quantity?: number;
+};
+
+type NormalizedMaterial = {
+  supplyId: string;
   grams: number;
+  quantity: number;
 };
 
 export function normalizeMaterialDrafts(
   materials: OrderMaterialDraft[] | undefined,
-): OrderMaterialDraft[] {
+): NormalizedMaterial[] {
   if (!materials?.length) return [];
-  const bySupply = new Map<string, number>();
+  const bySupply = new Map<string, { grams: number; quantity: number }>();
   for (const m of materials) {
     const supplyId = m.supplyId?.trim();
+    if (!supplyId) continue;
     const grams = Number(m.grams);
-    if (!supplyId || !Number.isFinite(grams) || grams <= 0) continue;
-    bySupply.set(supplyId, (bySupply.get(supplyId) ?? 0) + grams);
+    const quantity = Number(m.quantity);
+    const g = Number.isFinite(grams) && grams > 0 ? grams : 0;
+    const q = Number.isFinite(quantity) && quantity > 0 ? quantity : 0;
+    if (g <= 0 && q <= 0) continue;
+    const prev = bySupply.get(supplyId) ?? { grams: 0, quantity: 0 };
+    bySupply.set(supplyId, {
+      grams: prev.grams + g,
+      quantity: prev.quantity + q,
+    });
   }
-  return [...bySupply.entries()].map(([supplyId, grams]) => ({ supplyId, grams }));
+  return [...bySupply.entries()].map(([supplyId, v]) => ({
+    supplyId,
+    grams: v.grams,
+    quantity: v.quantity,
+  }));
 }
 
 export function materialCreateData(materials: OrderMaterialDraft[]) {
@@ -27,6 +48,7 @@ export function materialCreateData(materials: OrderMaterialDraft[]) {
     create: cleaned.map((m) => ({
       supplyId: m.supplyId,
       grams: m.grams,
+      quantity: m.quantity,
       deducted: false,
     })),
   };
@@ -93,6 +115,20 @@ export function mergeMaterialDrafts(
 
 type Tx = Prisma.TransactionClient;
 
+function materialStockDelta(mat: {
+  grams: number;
+  quantity: number;
+  supply: { unit: { gramsPerUnit: number | null } };
+}): number | null {
+  const gpu = mat.supply.unit.gramsPerUnit;
+  if (gpu != null && gpu > 0) {
+    if (!(mat.grams > 0)) return null;
+    return -(mat.grams / gpu);
+  }
+  if (!(mat.quantity > 0)) return null;
+  return -mat.quantity;
+}
+
 /** Descuenta stock de materiales no descontados del pedido. Idempotente. */
 export async function deductOrderMaterials(
   orderId: string,
@@ -113,13 +149,9 @@ export async function deductOrderMaterials(
   const notes = `Pedido ${label}`;
 
   for (const mat of order.materials) {
-    const gpu = mat.supply.unit.gramsPerUnit;
-    if (gpu == null || gpu <= 0) {
-      // Insumo sin masa: saltar sin marcar deducted para que se corrija a mano
-      continue;
-    }
+    const deltaQty = materialStockDelta(mat);
+    if (deltaQty == null) continue;
 
-    const deltaQty = -(mat.grams / gpu);
     const nextStock = Math.max(0, mat.supply.stockQty + deltaQty);
 
     await tx.stockAdjustment.create({
@@ -156,8 +188,14 @@ export async function getCommittedStockBySupply(): Promise<Map<string, number>> 
   const map = new Map<string, number>();
   for (const row of rows) {
     const gpu = row.supply.unit.gramsPerUnit;
-    if (gpu == null || gpu <= 0) continue;
-    const qty = row.grams / gpu;
+    let qty = 0;
+    if (gpu != null && gpu > 0) {
+      if (row.grams > 0) qty = row.grams / gpu;
+    } else if (row.quantity > 0) {
+      qty = row.quantity;
+    } else {
+      continue;
+    }
     map.set(row.supplyId, (map.get(row.supplyId) ?? 0) + qty);
   }
   return map;
