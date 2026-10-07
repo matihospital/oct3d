@@ -95,6 +95,7 @@ function orderLineCreateData(line: QuoteLineDraft) {
     unitPrice: line.unitPrice,
     unitCost: line.unitCost,
     link: line.link?.trim() || null,
+    done: line.done ?? false,
     colors:
       colors.length > 0
         ? {
@@ -105,6 +106,20 @@ function orderLineCreateData(line: QuoteLineDraft) {
           }
         : undefined,
   };
+}
+
+export async function toggleOrderLineDone(orderId: string, lineId: string) {
+  const line = await prisma.orderLine.findFirst({
+    where: { id: lineId, orderId },
+    select: { done: true },
+  });
+  if (!line) throw new Error("Línea no encontrada");
+  await prisma.orderLine.update({
+    where: { id: lineId },
+    data: { done: !line.done },
+  });
+  revalidatePath(`/ops/orders/${orderId}`);
+  revalidatePath("/ops/orders");
 }
 
 export async function updateOrder(

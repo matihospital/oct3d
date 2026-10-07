@@ -247,6 +247,8 @@ model OrderLine {
   unitPrice   Float
   unitCost    Float            @default(0)
   link        String?
+  /** Check de armado: la pieza ya está impresa/lista. */
+  done        Boolean          @default(false)
   colors      OrderLineColor[]
 
   @@index([orderId])

@@ -13,6 +13,7 @@
     "@oct3d/pricing": "*",
     "@vercel/analytics": "^2.0.1",
     "bcryptjs": "^3.0.2",
+    "html-to-image": "^1.11.13",
     "next": "16.3.2",
     "next-auth": "^4.24.11",
     "react": "19.2.8",

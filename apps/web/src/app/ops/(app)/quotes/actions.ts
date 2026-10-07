@@ -21,6 +21,8 @@ export type QuoteLineDraft = {
   /** @deprecated usar colors */
   colorIds?: string[];
   colors?: LineColorUsage[];
+  /** Solo pedidos: check de armado. */
+  done?: boolean;
 };
 
 function normalizeLineColors(line: QuoteLineDraft): LineColorUsage[] {

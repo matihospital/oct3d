@@ -18,6 +18,7 @@ import {
   markOrderDelivered,
   markOrderFullyPaid,
   markOrderUndelivered,
+  toggleOrderLineDone,
   updateOrderDelivery,
   updateOrderStatus,
 } from "../actions";
@@ -40,11 +41,13 @@ function toDateInput(d: Date | null | undefined): string {
 
 type OrderLineRow = {
   id: string;
+  orderId: string;
   description: string;
   quantity: number;
   unitPrice: number;
   unitCost: number;
   link: string | null;
+  done: boolean;
   colors: Array<{
     grams: number;
     color: { name: string; hex: string | null };
@@ -52,10 +55,27 @@ type OrderLineRow = {
 };
 
 function OrderLinesTable({ lines }: { lines: OrderLineRow[] }) {
+  const doneCount = lines.filter((l) => l.done).length;
   return (
+    <>
+      {lines.length > 0 ? (
+        <div className="flex items-center gap-3 border-b border-[var(--ads-border)] px-4 py-2 text-sm text-[var(--ads-text-subtle)]">
+          <span>
+            Armado: <strong className="text-[var(--ads-text)]">{doneCount}</strong> de{" "}
+            {lines.length} hecho{lines.length === 1 ? "" : "s"}
+          </span>
+          <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-[var(--ads-border)]">
+            <div
+              className="h-full bg-[var(--ads-success)]"
+              style={{ width: `${(doneCount / lines.length) * 100}%` }}
+            />
+          </div>
+        </div>
+      ) : null}
     <table className="ops-table">
       <thead>
         <tr>
+          <th className="w-24">Estado</th>
           <th>Descripción</th>
           <th>Cant.</th>
           <th>Precio</th>
@@ -67,7 +87,22 @@ function OrderLinesTable({ lines }: { lines: OrderLineRow[] }) {
         {lines.map((line) => (
           <tr key={line.id}>
             <td>
-              <div className="font-medium">{line.description}</div>
+              <form action={toggleOrderLineDone.bind(null, line.orderId, line.id)}>
+                <button
+                  type="submit"
+                  className={`ops-btn whitespace-nowrap ${line.done ? "ops-btn-primary" : "ops-btn-subtle"}`}
+                  title={line.done ? "Marcar como pendiente" : "Marcar como hecho"}
+                >
+                  {line.done ? "✓ Hecho" : "Pendiente"}
+                </button>
+              </form>
+            </td>
+            <td>
+              <div
+                className={`font-medium ${line.done ? "text-[var(--ads-text-subtlest)] line-through" : ""}`}
+              >
+                {line.description}
+              </div>
               <ColorBadges
                 colors={line.colors.map((c) => ({
                   name: c.color.name,
@@ -91,6 +126,7 @@ function OrderLinesTable({ lines }: { lines: OrderLineRow[] }) {
         ))}
       </tbody>
     </table>
+    </>
   );
 }
 
@@ -171,7 +207,7 @@ export default async function OrderDetailPage({
               className="ops-btn ops-btn-default"
               style={{ textDecoration: "none" }}
             >
-              Imprimir / PDF
+              Comprobante / WhatsApp
             </a>
           </div>
         }

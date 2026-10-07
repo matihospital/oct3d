@@ -66,7 +66,7 @@ export default async function OrdersPage({
         : sort === "created"
           ? { createdAt: "desc" }
           : [{ deliveryDate: "asc" }, { createdAt: "desc" }],
-    include: { _count: { select: { lines: true } } },
+    include: { lines: { select: { done: true } } },
   });
 
   // Null delivery dates last when sorting by delivery
@@ -225,7 +225,10 @@ export default async function OrdersPage({
                         {o.clientName || "Sin cliente"}
                       </Link>
                       <div className="text-xs text-[var(--ads-text-subtlest)]">
-                        {o._count.lines} líneas
+                        {o.lines.length} líneas
+                        {o.lines.length > 0 && o.deliveryStatus === "pending"
+                          ? ` · ${o.lines.filter((l) => l.done).length}/${o.lines.length} hechas`
+                          : ""}
                         {o.paymentStatus !== "paid" && balance > 0
                           ? ` · debe ${formatMoney(balance)}`
                           : ""}

@@ -94,6 +94,7 @@ export default async function EditOrderPage({
             unitPrice: line.unitPrice,
             unitCost: line.unitCost,
             link: line.link ?? "",
+            done: line.done,
             colors: line.colors.map((c) => ({
               colorId: c.colorId,
               grams: c.grams,
