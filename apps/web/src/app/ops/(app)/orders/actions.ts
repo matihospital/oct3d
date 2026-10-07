@@ -73,6 +73,7 @@ export async function createOrder(input: {
       notes: input.notes?.trim() || null,
       deliveryDate: parseOptionalDate(input.deliveryDate),
       ...totals,
+      paymentStatus: paymentStatusFromPaid(totals.totalPrice, 0),
       lines: {
         create: input.lines.map((line) => orderLineCreateData(line)),
       },

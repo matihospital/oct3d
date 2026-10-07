@@ -4,6 +4,7 @@ export function paymentStatusFromPaid(
   totalPrice: number,
   amountPaid: number,
 ): PaymentStatus {
+  if (totalPrice <= 0.5) return "paid";
   if (amountPaid <= 0.009) return "unpaid";
   if (amountPaid + 0.5 >= totalPrice) return "paid";
   return "partial";

@@ -9,6 +9,7 @@ import {
   materialCreateData,
   materialsFromLineColors,
 } from "@/lib/order-stock";
+import { paymentStatusFromPaid } from "@/lib/order-status";
 import { computeDocumentTotals } from "@/lib/totals";
 
 export type QuoteLineDraft = {
@@ -169,6 +170,7 @@ export async function createQuoteAsOrder(input: {
         totalPrice: quote.totalPrice,
         marginAmount: quote.marginAmount,
         marginPercent: quote.marginPercent,
+        paymentStatus: paymentStatusFromPaid(quote.totalPrice, 0),
         lines: {
           create: quote.lines.map((line) => ({
             productId: line.productId,
@@ -246,6 +248,7 @@ export async function convertQuoteToOrder(quoteId: string, formData?: FormData) 
       totalPrice: quote.totalPrice,
       marginAmount: quote.marginAmount,
       marginPercent: quote.marginPercent,
+      paymentStatus: paymentStatusFromPaid(quote.totalPrice, 0),
       lines: {
         create: quote.lines.map((line) => ({
           productId: line.productId,
